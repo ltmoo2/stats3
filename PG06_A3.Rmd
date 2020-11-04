@@ -8,11 +8,6 @@ author:
 date: "04/11/2020"
 output: html_document
 ---
-
-# Script file containing code chunks for Assignments 2 and 3
-## Document section headings and 
-## Assignment question numbers and marks included to help with navigation
-
 ```{r setup}
 knitr::opts_chunk$set(echo = TRUE, eval=TRUE,   warning = FALSE, message = FALSE, 
                       error = FALSE, tidy.opts = list(width.cutoff=60), tidy=TRUE, fig.align = 'center')
