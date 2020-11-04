@@ -1,0 +1,348 @@
+---
+title: "PG06_A3"
+author:
+  - Lachlan Moody ID27809951
+  - Abhishek Sinha ID31322743
+  - Sen Wang ID30382106
+  - Yiwen Zhang ID31203019
+date: "04/11/2020"
+output: html_document
+---
+
+# Script file containing code chunks for Assignments 2 and 3
+## Document section headings and 
+## Assignment question numbers and marks included to help with navigation
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE, eval=TRUE,   warning = FALSE, message = FALSE, 
+                      error = FALSE, tidy.opts = list(width.cutoff=60), tidy=TRUE, fig.align = 'center')
+options(digits = 3)
+```
+
+```{r libraries}
+library(tidyverse)
+library(bayess)
+library(broom)
+library(car)
+library(GGally)
+library(meifly)
+library(patchwork)
+library(kableExtra)
+```
+
+```{r data}
+data(caterpillar)
+cat <- as_tibble(caterpillar)
+```
+
+## Part B: Multiple Linear Regression
+
+```{r scatmat, fig.height=5, fig.width=8}
+ggscatmat(cat, columns=c(1:9)) + 
+  theme(geom.text.size = 7, strip.text.x = element_text(size = 12)) +
+  theme_bw(base_size = 7)
+```
+
+
+### Q10. [10 marks]
+**i)**
+
+
+**ii)**
+
+
+**iiii)**
+
+
+### Q11. [5 marks] 
+```{r q11}
+modelf <- lm(data = cat, formula = y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8)
+car::vif(modelf) 
+
+```
+
+
+### Q12. [10 marks] 
+
+
+```{r ensemble}
+quiet <- function(x) { 
+  sink(tempfile()) 
+  on.exit(sink()) 
+  invisible(force(x)) 
+} 
+
+all_mod <- quiet(fitall(y=cat$y,x=cat[,-c(6,9)], method="lm"))
+summary(all_mod)
+```
+
+
+### Q13. [5 marks] 
+```{r q13}
+nrow(summary(all_mod))
+nmod <- nrow(summary(all_mod))
+```
+
+
+```{r modperform, fig.height=4, fig.width=6}
+all_mod_s <- all_mod %>%
+  map_df(glance) %>%
+  mutate(model = nmod) %>%
+  mutate(negBIC = -1*BIC, negAIC = -1*AIC) 
+
+label <- NULL
+for (i in nmod) {
+  l <- as.character(summary(all_mod[[i]])$call)[2]
+  label <- c(label,
+    substr(l, 5, str_length(l)))
+}
+
+all_mod_s_long <- all_mod_s %>%
+  gather(fit_stat, val, adj.r.squared, negAIC, 
+         negBIC, logLik, r.squared) %>%
+  group_by(fit_stat, df) %>% 
+  mutate(rank = min_rank(desc(val)))
+
+p1 <- ggplot(all_mod_s_long, aes(df, val)) + 
+  geom_point() + 
+  geom_line(data=filter(all_mod_s_long, rank == 1)) + 
+  facet_wrap(~fit_stat, ncol = 5, scales = "free_y") + 
+  xlab("Number of regressors (exclduing the intercept)") + 
+  ylab("Values") + 
+  theme_grey(base_size = 10)
+
+p1
+```
+
+
+
+```{r bestperform}
+print("Adjusted R-squared")
+indexadjRsq<-c(1:nmod)[all_mod_s$adj.r.squared==max(all_mod_s$adj.r.squared)]
+indexadjRsq
+max_adjRsq <- all_mod[[indexadjRsq]]
+max_adjRsq
+
+print("log-Likelihood")
+indexlogLik<-c(1:nmod)[all_mod_s$logLik==max(all_mod_s$logLik)]
+indexlogLik
+max_logLik <- all_mod[[indexlogLik]]
+max_logLik
+
+print("Negative AIC")
+indexAIC<-c(1:nmod)[all_mod_s$negAIC==max(all_mod_s$negAIC)]
+indexAIC
+max_AIC <- all_mod[[indexAIC]]
+max_AIC
+
+print("Negative BIC")
+indexBIC<-c(1:nmod)[all_mod_s$negBIC==max(all_mod_s$negBIC)]
+indexBIC
+max_BIC <- all_mod[[indexBIC]]
+max_BIC
+
+print("R-squared")
+indexRsq<-c(1:nmod)[all_mod_s$r.squared==max(all_mod_s$r.squared)]
+indexRsq
+max_Rsq <- all_mod[[indexRsq]]
+max_Rsq
+```
+
+### Q14. [20 marks] 
+```{r q14i}
+mod55 <- lm(formula = y ~ x1 + x2 + x3 + x5 + x7, data = cat)
+mod35 <- lm(formula = y ~ x1 + x2 + x7, data = cat)
+
+bind_rows(glance(mod55),
+          glance(mod35), .id = "model") %>%
+  mutate(model = c("model 55", "model 35")) %>%
+  kable(caption = "Model summary statistics") %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
+```  
+
+
+```{r q14ii, fig.height=6, fig.width=8}
+model_hist <- function(model, title){
+  augment(model) %>%
+  ggplot(aes(x= .resid)) +
+  geom_histogram(fill = "#e15759", colour = "#4e79a7", alpha = 0.8) +
+  theme_bw() +
+    ggtitle(paste("Histrogram of residuals for", title))
+}
+
+model_qq <- function(model, title){
+    augment(model) %>%
+    ggplot(aes(sample = .resid)) +
+    geom_qq(color = "#e15759",
+            alpha = 0.5) +
+    geom_qq_line(color = "#4e79a7",
+                 size = 1) +
+    theme_bw() +
+    ggtitle(paste("Q-Q plot for", title))
+}
+
+model_resid <- function(model, title){
+    augment(model) %>%
+    ggplot(aes(x = .fitted, y = .resid)) +
+    geom_point(color = "#e15759",
+            alpha = 0.5) +
+    geom_hline(yintercept = 0, 
+               color = "#4e79a7",
+               size = 1) +
+    theme_bw() +
+    ggtitle(paste("Residual plot for", title))
+}
+
+p1 <- model_hist(mod55, "model 55")
+p2 <- model_qq(mod55, "model 55")
+p3 <- model_resid(mod55, "model 55")
+
+p4 <- model_hist(mod35, "model 35")
+p5 <- model_qq(mod35, "model 35")
+p6 <- model_resid(mod35, "model 35")
+
+(p1 | p4) /
+(p2 | p5) /
+(p3 | p6)
+
+```
+
+```{r q14iii}
+n = nrow(cat)
+
+p55 = nrow(tidy(mod55))
+t55 = 2*p55/n
+
+p35 = nrow(tidy(mod35))
+t35 = 2*p35/n
+
+leverage_plot <- function(model, t, title){
+  augment(model) %>%
+  ggplot(aes(x = .hat)) +
+  geom_bar(colour = "#4e79a7", fill = "#4e79a7") +
+  geom_vline(xintercept = t, colour = "#e15759") + 
+  theme_bw() +
+  ggtitle(paste("Leverage values for", title))
+}
+
+cooks_plot <- function(model, t, title){
+  augment(model) %>%
+    ggplot(aes(x = .cooksd)) +
+    geom_bar(colour = "#4e79a7", fill = "blue") +
+    geom_vline(xintercept = t, colour = "#e15759") +
+    theme_bw() +
+    ggtitle(paste("Cook's Distance values for", title))
+}
+
+p7 <- leverage_plot(mod55, t55, "model 55")
+p8 <- cooks_plot(mod55, t55, "model 55")
+
+p9 <- leverage_plot(mod35, t35, "model 35")
+p10 <- cooks_plot(mod35, t35, "model 35")
+
+
+(p7 | p9) /
+(p8 | p10)
+
+
+```
+
+```{r q14iv}
+modelp <- lm(formula = y ~ x1 + x2 + x3 + x5 + x7, data = cat)
+```
+
+
+### Q15. [5 marks] 
+```{r q15i}
+modelp
+```
+```{r 15ii}
+clt <- confint(modelp) %>%
+  as_tibble() %>%
+  mutate(coefficient = c("Incercept", "x1", "x2", "x3", "x5", "x7")) %>%
+  dplyr::select(coefficient, `2.5 %`, `97.5 %`)
+
+clt %>% kable(caption = "CLT-based confidence intervals") %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
+```
+
+```{r 15iii}
+sigma(modelp)
+```
+
+### Q16. [10 marks] 
+
+```{r boot}
+modelf <- lm(y ~ x1 + x2 + x3 + x5 + x7, data = cat) 
+tidyf <- tidy(modelf)
+
+R <- 1000
+n <- nrow(cat)
+
+R_coeffs <- tibble(b0 = rep(0,R), b1 = rep(0, R), b2 = rep(0, R), b3=rep(0,R), b4=rep(0,R), b5 = rep(0, R))
+
+set.seed(2020) 
+for(j in (1:R)){
+  temp <- cat %>% slice_sample(n=n, replace=TRUE)
+  tempf <- lm(y ~ x1 + x2 + x3 + x5 + x7, data = temp)
+  tidyf <- tidy(tempf)
+  R_coeffs[j,] <- t(tidyf$estimate)
+}
+
+beta_coeff <- function(b){
+  R_coeffs %>%
+  pull({{b}}) %>%
+  quantile(c(0.025, 0.975))
+}
+
+boot_interval <- bind_rows(
+  beta_coeff(b0),
+  beta_coeff(b1),
+  beta_coeff(b2),
+  beta_coeff(b3),
+  beta_coeff(b4),
+  beta_coeff(b5))
+
+
+
+boot_interval <- boot_interval %>%
+  mutate(coefficient = c("b0", "b1", "b2", "b3", "b4", "b5")) %>%
+  dplyr::select(coefficient, `2.5%`, `97.5%`)
+
+boot_interval %>%
+  kable(caption = "Bootstrap-based confidence intervals") %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
+
+modelf
+  
+```
+
+```{r bootplot, fig.height=6, fig.width=8}
+boot_plot <- R_coeffs %>%
+  pivot_longer(names_to = "coefficient", cols = b0:b5) %>%
+  left_join(boot_interval) %>%
+  left_join(tidyf %>% mutate(coefficient = c("b0", "b1", "b2", "b3", "b4", "b5")) %>%
+  dplyr::select(coefficient, estimate))
+
+boot_plot %>% ggplot(aes(x = value, y = ..density..)) +
+  geom_density(fill = "#e15759", colour = "#4e79a7") +
+  geom_histogram(fill = "#e15759", colour = "#4e79a7", alpha = 0.8) +
+  geom_vline(aes(xintercept = `2.5%`), size = 1, colour = "dark grey") +
+  geom_vline(aes(xintercept = `97.5%`), size = 1, colour = "dark grey") +
+  geom_vline(aes(xintercept = estimate), size = 1) +
+  facet_wrap(~coefficient, scales = "free") +
+  theme_bw() +
+  ggtitle("Bootstrap sampling confidence intervals for regression coefficients") +
+  xlab("coefficient estimate")
+
+
+```
+
+
+## Part C: Additional Questions for ETC5242 Groups
+
+
+### Q17. [20 marks] 
+
+
+### Q18. [15 marks] 
