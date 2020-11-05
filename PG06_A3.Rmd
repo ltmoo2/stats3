@@ -23,16 +23,25 @@ library(GGally)
 library(meifly)
 library(patchwork)
 library(kableExtra)
+library(boot)
 ```
 
 ```{r data}
 data(caterpillar)
 cat <- as_tibble(caterpillar)
+data_desc <- tibble("variable" = c("x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "y"),
+       "description" = c("altitude (in meters)", "slope (in degrees)", "number of pine trees in the area", "height (in meters) of the tree sampled at the center of the area", "orientation of the area (from 1 if southbound to 2 otherwise)", "height (in meters) of the dominant tree", "number of vegetation strata", "mix settlement index (from 1 if not mixed to 2 if mixed)", "logarithmic transform of the average number of nests of caterpillars per tree"))
 ```
 
 ## Part B: Multiple Linear Regression
 
-```{r scatmat, fig.height=5, fig.width=8}
+```{r datadesc}
+data_desc %>%
+  kable(caption = "Description of variables in `caterpillar` dataset") %>%
+  kable_styling(bootstrap_options = c("striped", "border"))
+```
+
+```{r scatmat, fig.height=10, fig.width=10}
 ggscatmat(cat, columns=c(1:9)) + 
   theme(geom.text.size = 7, strip.text.x = element_text(size = 12)) +
   theme_bw(base_size = 7)
@@ -202,7 +211,24 @@ p6 <- model_resid(mod35, "model 35")
 
 ```
 
-```{r q14iii}
+```{r 14iii, fig.height=10, fig.width=10}
+residregress <- function(model, title){
+cat %>% left_join(augment(model)) %>%
+  pivot_longer(x1:x8) %>%
+    ggplot(aes(x = value, y = .resid)) +
+    geom_point(color = "#e15759",
+            alpha = 0.5) +
+    facet_wrap(~name, scales ="free", ncol = 1) +
+    ggtitle(paste("Residuals against available regressors for", title)) +
+    theme_bw()
+}
+
+residregress(mod55, "model 55") + residregress(mod35, "model 35")
+```
+
+
+
+```{r q14iv}
 n = nrow(cat)
 
 p55 = nrow(tidy(mod55))
@@ -242,7 +268,8 @@ p10 <- cooks_plot(mod35, t35, "model 35")
 
 ```
 
-```{r q14iv}
+
+```{r q14v}
 modelp <- lm(formula = y ~ x1 + x2 + x3 + x5 + x7, data = cat)
 ```
 
@@ -251,6 +278,8 @@ modelp <- lm(formula = y ~ x1 + x2 + x3 + x5 + x7, data = cat)
 ```{r q15i}
 modelp
 ```
+
+
 ```{r 15ii}
 clt <- confint(modelp) %>%
   as_tibble() %>%
@@ -268,8 +297,8 @@ sigma(modelp)
 ### Q16. [10 marks] 
 
 ```{r boot}
-modelf <- lm(y ~ x1 + x2 + x3 + x5 + x7, data = cat) 
-tidyf <- tidy(modelf)
+modelp <- lm(y ~ x1 + x2 + x3 + x5 + x7, data = cat) 
+tidyp <- tidy(modelp)
 
 R <- 1000
 n <- nrow(cat)
@@ -308,7 +337,7 @@ boot_interval %>%
   kable(caption = "Bootstrap-based confidence intervals") %>%
   kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
 
-modelf
+modelp
   
 ```
 
@@ -316,7 +345,7 @@ modelf
 boot_plot <- R_coeffs %>%
   pivot_longer(names_to = "coefficient", cols = b0:b5) %>%
   left_join(boot_interval) %>%
-  left_join(tidyf %>% mutate(coefficient = c("b0", "b1", "b2", "b3", "b4", "b5")) %>%
+  left_join(tidyp %>% mutate(coefficient = c("b0", "b1", "b2", "b3", "b4", "b5")) %>%
   dplyr::select(coefficient, estimate))
 
 boot_plot %>% ggplot(aes(x = value, y = ..density..)) +
@@ -338,6 +367,58 @@ boot_plot %>% ggplot(aes(x = value, y = ..density..)) +
 
 
 ### Q17. [20 marks] 
+```{r q17}
+set.seed(2020)
+
+cat2 <- cat 
+n <- nrow(cat2) 
+R <- 1000 
+
+
+Rcat2 <- cat2
+
+for (r in 1:R) {
+  Rcat2 <- Rcat2 %>% mutate(x1 = sample(cat2$x1, n, replace = FALSE))
+  tempf <- lm(y ~ x1 + x2 + x3 + x5 + x7, data = Rcat2)
+  tidyf <- tidy(tempf)
+  R_coeffs[j,] <- t(tidyf$estimate)
+}
+
+b1obs <- tidyp %>% filter(term == "x1") %>%
+  pull(estimate)
+
+
+pval <- R_coeffs %>%
+  filter(abs(b1) >= abs(b1obs)) %>%
+  nrow()/R
+
+
+R_coeffs %>%
+  dplyr::select(b1) %>%
+  mutate(b1obs = b1obs) %>%
+  ggplot(aes(x = b1)) +
+  geom_histogram(fill = "#e15759", colour = "#4e79a7", alpha = 0.8) +
+  geom_vline(xintercept = b1obs, size = 1) +
+  geom_vline(xintercept = -b1obs, size = 1) +
+  theme_bw() +
+  ggtitle("Permutation test for b1 from modelp") +
+  xlab("permuted value of b1")
+
+
+
+
+```
 
 
 ### Q18. [15 marks] 
+```{r q18}
+loocv <- function(model){
+  h = lm.influence(model)$h
+  mean((residuals(model)/(1-h))^2)
+}
+
+
+loocv(modelf)
+loocv(modelp)
+```
+
