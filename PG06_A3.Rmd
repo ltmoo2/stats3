@@ -113,7 +113,7 @@ p1 <- ggplot(all_mod_s_long, aes(df, val)) +
   facet_wrap(~fit_stat, ncol = 5, scales = "free_y") + 
   xlab("Number of regressors (exclduing the intercept)") + 
   ylab("Values") + 
-  theme_grey(base_size = 10)
+  theme_bw(base_size = 10)
 
 p1
 ```
