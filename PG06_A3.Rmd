@@ -178,9 +178,9 @@ max_Rsq
 ```
 
 ### Q14. [20 marks] 
-Based on the ensemble of models produced, five potentially "best" models are selected based on those with the highest adjusted r-squared, log-likelihood, negative AIC, negative BIC and r-squared values. However, as r-squared and log-likelihood will never decrease when new regressors are added they should not be used to compare models with different numbers of regressors as in this scenario. The other three measures, adjusted r-squared, negative AIC and negative BIC introduce penalty terms for the number of regressors thus making them for useful for comparison in this scenario.  
+Based on the ensemble of models produced, five potentially "best" models are selected based on those with the highest adjusted r-squared, log-likelihood, negative AIC, negative BIC and r-squared values. However, as r-squared and log-likelihood will never decrease when new regressors are added they should not be used to compare models with different numbers of regressors as in this scenario. The other three measures, adjusted r-squared, negative AIC and negative BIC introduce penalty terms for the number of regressors thus making them more useful for comparison in this scenario.  
 
-Based on this, there are only two models for consideration. Model 55 as the one with highest adjusted r-squared and negative AIC and model 35 as the one with the highest BIC. The formula foe each of these models has been saved as `mod55` and `mod35` below. Additionally, a summary of each models performance has been output. Note that the table shows the AIC and BIC values rather than their negatives. So while model 35's BIC is lower, between these two it is better considering the aim is to maximise the negative value.  
+Based on this, there are only two models for consideration. Model 55 as the one with highest adjusted r-squared and negative AIC and model 35 as the one with the highest BIC. The formula for each of these models has been saved as `mod55` and `mod35` below. Additionally, a summary of each models performance has been output. Note that the table shows the AIC and BIC values rather than their negatives. So while model 35's BIC is lower, between these two it is better considering the aim is to maximise the negative value.  
 
 ```{r q14i}
 mod55 <- lm(formula = y ~ x1 + x2 + x3 + x5 + x7, data = cat)
@@ -192,7 +192,7 @@ bind_rows(glance(mod55),
   kable(caption = "Model summary statistics") %>%
   kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
 ```  
-Firstly regarding the number of regressors in each model, looking back to the table titled *'Ensemble Performance'*, we can see that both adjusted r-squared and negative AIC both peak at 5 regressors each while negative BIV peaks at 3. This matches the form of model 55 and 35 respectively. The difference in model preference for the negative AIC and BIC values is not unexpected as BIC penalises model complexity more heavily than AIC or adjusted r-squared. Thus it produces a higher value for model 35 which only has three regressors plus an intercept over model 55 which has 5 regressors plus an intercept.  
+Firstly regarding the number of regressors in each model, looking back to the table titled *'Ensemble Performance'*, we can see that both adjusted r-squared and negative AIC both peak at 5 regressors each while negative BIC peaks at 3. This matches the form of model 55 and 35 respectively. The difference in model preference for the negative AIC and BIC values is not unexpected as BIC penalises model complexity more heavily than AIC or adjusted r-squared. Thus it produces a higher value for model 35 which only has three regressors plus an intercept over model 55 which has 5 regressors plus an intercept.  
 
 So as both models have some level of validity the next step is to examine the residual values of each model. This can be visualised in three ways - plotting a histogram of the residuals, producing a normal probability (or quantile-quantile) plot, and ploting a residuals versus fitted plot. This can be seen in the output below.
 
@@ -432,9 +432,9 @@ The code displayed below is used to conduct a two sided permutation test for b1 
 $$ H_{0}: \beta_{1} = 0 $$
 $$ H_{1}: \beta_{1} \neq 0 $$
 
-Similar to the bootstrap process described earlier, here the data is sampled from the empirical data but this time without replacement. Additionally, as we are only testing the value of $\beta_{1} $ we only shuffle the values of the associated explanatory variable, in this case x1. Once this is done we re-fit modelp to this new sample and extract the estimate of the coefficient for $ \beta_{1} $. As with the bootstrap sample, we repeat this process 1,000 times.  
+Similar to the bootstrap process described earlier, here the data is sampled from the empirical data but this time without replacement. Additionally, as we are only testing the value of $\beta_{1}$ we only shuffle the values of the associated explanatory variable, in this case x1. Once this is done we re-fit modelp to this new sample and extract the estimate of the coefficient for $\beta_{1}$. As with the bootstrap sample, we repeat this process 1,000 times.  
 
-This process is done to break any existing association between the regressor and the response variable, which is y, in our collected data. The resulting distribution from these permutations represents the hypothetical distribution of $\beta_{1} $ under $ H{0} $. In regards to this model, this would mean that x1 (altitude in m) is not having a statistically significant effect on the number of caterpillar nests per tree (y variable). The estimate calculated for our model from the observed data can then be compared to this null distribution in order to calculate the p-value for the permutation test.
+This process is done to break any existing association between the regressor and the response variable, which is y, in our collected data. The resulting distribution from these permutations represents the hypothetical distribution of $\beta_{1}$ under $H_{0}$. In regards to this model, this would mean that x1 (altitude in m) is not having a statistically significant effect on the number of caterpillar nests per tree (y variable). The estimate calculated for our model from the observed data can then be compared to this null distribution in order to calculate the p-value for the permutation test.
 
 ```{r q17i}
 set.seed(2020)
@@ -454,10 +454,10 @@ for (r in 1:R) {
 }
 ```
 
-The p-value calculated from this will be used to determine the outcome of the hypothesis tests shown earlier. As we are using a 5% confidence level we requiire a p-value of 0.05 or smaller for their to be enough evidence to reject the  null hypothesis in favour of the alternative. To calculate this p-value, the proportion of randomised samples that are as or more extreme than the observed value are required which is designated as `b1obs` and has a value of -0.0026. We use this value to filter the permuted samples with estimates more extreme than this value. As this is a two-sided test we use the absolute value of both as we are interested in any difference regardless of direction.  
+The p-value calculated from this will be used to determine the outcome of the hypothesis tests shown earlier. As we are using a 5% confidence level we requiire a p-value of 0.05 or smaller for there to be enough evidence to reject the  null hypothesis in favour of the alternative. To calculate this p-value, the proportion of randomised samples that are as or more extreme than the observed value are required which is designated as `b1obs` and has a value of -0.0026. We use this value to filter the permuted samples with estimates more extreme than this value. As this is a two-sided test we use the absolute value of both as we are interested in any difference regardless of direction.  
 
 
-The code below performs this calculation and is saved as `pval`, and calling this value we see that it is 0.52. This means that 52% of our data sets sampled from the null distribution produced a $ \beta_{1} $ more extreme than that observed from the 'real' data. Since this value is above 0.05 we cannot reject $ H_{0}$ as there is not enough strength of evidence to do so. Thus it appears the value of $ \beta_{1} $ is not significantly different from 0. 
+The code below performs this calculation and is saved as `pval`, and calling this value we see that it is 0.52. This means that 52% of our data sets sampled from the null distribution produced a $\beta_{1}$ more extreme than that observed from the 'real' data. Since this value is above 0.05 we cannot reject $H_{0}$ as there is not enough strength of evidence to do so. Thus it appears the value of $\beta_{1}$ is not significantly different from 0. 
 
 ```{r q17ii}
 b1obs <- tidyp %>% filter(term == "x1") %>%
@@ -469,7 +469,7 @@ pval <- R_coeffs %>%
 
 pval
 ```
-This can be viusalised, as with the bootstrap, by producing a histogram of the permuted samples. Here the black line relates to the observed value of $ \beta_{1}$ from the modelp. From this we can see that roughly half of the values produced were more extreme than what was modeled. This is further evidence for the failure to reject $ H_{0}$.
+This can be viusalised, as with the bootstrap, by producing a histogram of the permuted samples. Here the black line relates to the observed value of $\beta_{1}$ from the modelp. From this we can see that roughly half of the values produced were more extreme than what was modeled. This is further evidence for the failure to reject $H_{0}$.
 
 ```{r q17iii}
 R_coeffs %>%
