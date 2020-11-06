@@ -327,10 +327,10 @@ modelp <- lm(formula = y ~ x1 + x2 + x3 + x5 + x7, data = cat)
 modelp
 ```
 Based on the above analysis, the preferred model is model 55 which is saved as modelp. The form of this model can be seen in the above output and can be written as:
-$ y = 8.167 - 0.0026 \times x1 - 0.0361 \times x2 + 0.0396 \times x3 -0.692 \times x5 - 1.108 \times x7$ 
+$$ y = 8.167 - 0.0026 \times x1 - 0.0361 \times x2 + 0.0396 \times x3 -0.692 \times x5 - 1.108 \times x7 $$ 
 
 Or with abbreviated variable names as:
-$ y = 8.167 - 0.0026 \times altitude - 0.0361 \times slope + 0.0396 \times trees -0.692 \times orientation - 1.108 \times vegetation$
+$$ y = 8.167 - 0.0026 \times altitude - 0.0361 \times slope + 0.0396 \times trees -0.692 \times orientation - 1.108 \times vegetation $$
 
 CLT-based confidence levels can also be constructed for the regression coefficients using the *confit* function and are provided in the table below:
 
@@ -427,7 +427,16 @@ boot_plot %>% ggplot(aes(x = value, y = ..density..)) +
 
 
 ### Q17. [20 marks] 
-```{r q17}
+The code displayed below is used to conduct a two sided permutation test for b1 for the preferred model, designated as modelp. This test can be used to conduct the following hypothesis test at a 5% significance level.
+
+$$ H_{0}: \beta_{1} = 0 $$
+$$ H_{1}: \beta_{1} \neq 0 $$
+
+Similar to the bootstrap process described earlier, here the data is sampled from the empirical data but this time without replacement. Additionally, as we are only testing the value of $\beta_{1} $ we only shuffle the values of the associated explanatory variable, in this case x1. Once this is done we re-fit modelp to this new sample and extract the estimate of the coefficient for $ \beta_{1} $. As with the bootstrap sample, we repeat this process 1,000 times.  
+
+This process is done to break any existing association between the regressor and the response variable, which is y, in our collected data. The resulting distribution from these permutations represents the hypothetical distribution of $\beta_{1} $ under $ H{0} $. In regards to this model, this would mean that x1 (altitude in m) is not having a statistically significant effect on the number of caterpillar nests per tree (y variable). The estimate calculated for our model from the observed data can then be compared to this null distribution in order to calculate the p-value for the permutation test.
+
+```{r q17i}
 set.seed(2020)
 
 cat2 <- cat 
@@ -443,32 +452,35 @@ for (r in 1:R) {
   tidyf <- tidy(tempf)
   R_coeffs[j,] <- t(tidyf$estimate)
 }
+```
 
+The p-value calculated from this will be used to determine the outcome of the hypothesis tests shown earlier. As we are using a 5% confidence level we requiire a p-value of 0.05 or smaller for their to be enough evidence to reject the  null hypothesis in favour of the alternative. To calculate this p-value, the proportion of randomised samples that are as or more extreme than the observed value are required which is designated as `b1obs` and has a value of -0.0026. We use this value to filter the permuted samples with estimates more extreme than this value. As this is a two-sided test we use the absolute value of both as we are interested in any difference regardless of direction.  
+
+
+The code below performs this calculation and is saved as `pval`, and calling this value we see that it is 0.52. This means that 52% of our data sets sampled from the null distribution produced a $ \beta_{1} $ more extreme than that observed from the 'real' data. Since this value is above 0.05 we cannot reject $ H_{0}$ as there is not enough strength of evidence to do so. Thus it appears the value of $ \beta_{1} $ is not significantly different from 0. 
+
+```{r q17ii}
 b1obs <- tidyp %>% filter(term == "x1") %>%
   pull(estimate)
-
 
 pval <- R_coeffs %>%
   filter(abs(b1) >= abs(b1obs)) %>%
   nrow()/R
 
 pval
+```
+This can be viusalised, as with the bootstrap, by producing a histogram of the permuted samples. Here the black line relates to the observed value of $ \beta_{1}$ from the modelp. From this we can see that roughly half of the values produced were more extreme than what was modeled. This is further evidence for the failure to reject $ H_{0}$.
 
-
+```{r q17iii}
 R_coeffs %>%
   dplyr::select(b1) %>%
   mutate(b1obs = b1obs) %>%
   ggplot(aes(x = b1)) +
   geom_histogram(fill = "#e15759", colour = "#4e79a7", alpha = 0.8) +
   geom_vline(xintercept = b1obs, size = 1) +
-  geom_vline(xintercept = -b1obs, size = 1) +
   theme_bw() +
   ggtitle("Permutation test for b1 from modelp") +
   xlab("permuted value of b1")
-
-
-
-
 ```
 
 
