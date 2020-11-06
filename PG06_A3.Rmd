@@ -341,7 +341,7 @@ clt <- confint(modelp) %>%
   dplyr::select(coefficient, `2.5 %`, `97.5 %`)
 
 clt %>% kable(caption = "CLT-based confidence intervals") %>%
-  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
+  kable_styling(bootstrap_options = c("striped", "bordered"))
 ```
 An additional statistic of interest is the estimated standard deviation of the residuals or, also named, the residual standard deviation. This can be extracted using the *sigma* function is shown in the output below to be .531. This value tells us the standard deviation of the residual values which is the difference between the obseved and model fitted values.
 
@@ -485,14 +485,17 @@ R_coeffs %>%
 
 
 ### Q18. [15 marks] 
+An additional method for model validation is leave one out cross validation, denoted as LOOCV. This method works by leaving out one data point and building the model on the remaining data. The produced model is then used to predict the value of the removed observation. This process is repeated for all of the observations. Once complete the overall prediction error can be calculated by taking the average of the test errors associated with each of the predictions. The function created below calculates this value for each model by taking the mean of the residuals over the leverage squared. The output is provided in the table.
+
 ```{r q18}
 loocv <- function(model){
   h = lm.influence(model)$h
   mean((residuals(model)/(1-h))^2)
 }
 
-
-loocv(modelf)
-loocv(modelp)
+tibble("model" = c("modelf", "modelp")) %>%
+  mutate("loocv" = c(loocv(modelf), loocv(modelp))) %>%
+  kable(caption = "LOOCV values for modelf and modelp") %>%
+  kable_styling(bootstrap_options = c("striped", "bordered"))
 ```
-
+From this table we see that modelp has a lower LOOCV value and therefore a lower overall error - even with fewer regressors. This means that the preferred model performs better than the full model at predicting the response variable y -  the logarithmic transform of the average number of nests of caterpillars per tree. This then supports the process undertaken to determine the best model, and the removal of x4, x6, and x8 from the linear model. Respectively, this means that it is unlikely that the height of the center tree, the height of the dominant tree and the settlement index are associated with the number of caterpillar nests per tree.
