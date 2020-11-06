@@ -139,7 +139,8 @@ p1 <- ggplot(all_mod_s_long, aes(df, val)) +
   ylab("Values") + 
   theme_bw(base_size = 10)
 
-p1
+p1 + 
+  ggtitle("Ensemble performance")
 ```
 
 
@@ -177,6 +178,10 @@ max_Rsq
 ```
 
 ### Q14. [20 marks] 
+Based on the ensemble of models produced, five potentially "best" models are selected based on those with the highest adjusted r-squared, log-likelihood, negative AIC, negative BIC and r-squared values. However, as r-squared and log-likelihood will never decrease when new regressors are added they should not be used to compare models with different numbers of regressors as in this scenario. The other three measures, adjusted r-squared, negative AIC and negative BIC introduce penalty terms for the number of regressors thus making them for useful for comparison in this scenario.  
+
+Based on this, there are only two models for consideration. Model 55 as the one with highest adjusted r-squared and negative AIC and model 35 as the one with the highest BIC. The formula foe each of these models has been saved as `mod55` and `mod35` below. Additionally, a summary of each models performance has been output. Note that the table shows the AIC and BIC values rather than their negatives. So while model 35's BIC is lower, between these two it is better considering the aim is to maximise the negative value.  
+
 ```{r q14i}
 mod55 <- lm(formula = y ~ x1 + x2 + x3 + x5 + x7, data = cat)
 mod35 <- lm(formula = y ~ x1 + x2 + x7, data = cat)
@@ -187,38 +192,40 @@ bind_rows(glance(mod55),
   kable(caption = "Model summary statistics") %>%
   kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
 ```  
+Firstly regarding the number of regressors in each model, looking back to the table titled *'Ensemble Performance'*, we can see that both adjusted r-squared and negative AIC both peak at 5 regressors each while negative BIV peaks at 3. This matches the form of model 55 and 35 respectively. The difference in model preference for the negative AIC and BIC values is not unexpected as BIC penalises model complexity more heavily than AIC or adjusted r-squared. Thus it produces a higher value for model 35 which only has three regressors plus an intercept over model 55 which has 5 regressors plus an intercept.  
 
+So as both models have some level of validity the next step is to examine the residual values of each model. This can be visualised in three ways - plotting a histogram of the residuals, producing a normal probability (or quantile-quantile) plot, and ploting a residuals versus fitted plot. This can be seen in the output below.
 
 ```{r q14ii, fig.height=6, fig.width=8}
 model_hist <- function(model, title){
   augment(model) %>%
-  ggplot(aes(x= .resid)) +
-  geom_histogram(fill = "#e15759", colour = "#4e79a7", alpha = 0.8) +
-  theme_bw() +
+    ggplot(aes(x= .resid, y = ..density..)) +
+    geom_histogram(fill = "#e15759", colour = "#4e79a7", alpha = 0.8) +
+    theme_bw() +
     ggtitle(paste("Histrogram of residuals for", title))
 }
 
 model_qq <- function(model, title){
     augment(model) %>%
-    ggplot(aes(sample = .resid)) +
-    geom_qq(color = "#e15759",
-            alpha = 0.5) +
-    geom_qq_line(color = "#4e79a7",
-                 size = 1) +
-    theme_bw() +
-    ggtitle(paste("Q-Q plot for", title))
+      ggplot(aes(sample = .resid)) +
+      geom_qq(color = "#e15759",
+              alpha = 0.5) +
+      geom_qq_line(color = "#4e79a7",
+                   size = 1) +
+      theme_bw() +
+      ggtitle(paste("Q-Q plot for", title))
 }
 
 model_resid <- function(model, title){
     augment(model) %>%
-    ggplot(aes(x = .fitted, y = .resid)) +
-    geom_point(color = "#e15759",
-            alpha = 0.5) +
-    geom_hline(yintercept = 0, 
-               color = "#4e79a7",
-               size = 1) +
-    theme_bw() +
-    ggtitle(paste("Residual plot for", title))
+      ggplot(aes(x = .fitted, y = .resid)) +
+      geom_point(color = "#e15759",
+              alpha = 0.5) +
+      geom_hline(yintercept = 0, 
+                 color = "#4e79a7",
+                 size = 1) +
+      theme_bw() +
+      ggtitle(paste("Residual plot for", title))
 }
 
 p1 <- model_hist(mod55, "model 55")
@@ -235,6 +242,14 @@ p6 <- model_resid(mod35, "model 35")
 
 ```
 
+Starting from the top row, the residuals for model 55 appear to be more normally distributed than model 35 as it appears to have some slight positive skew in its distribution. This indicates that the normality assumption is more likely to be true for model 55 as the variance is normally distributed.  
+
+In the second row, the normal probability plot for each model is shown. This plots the quantiles sampled from the data against the standard normal distribution. If the points fall along the line, this indicates that the residuals come from a normal distribution. As both models fit this line quite well they both pass this check.  
+
+The third plot shows the residuals of each model against its fitted value. The plot is used to detect non-linearity, unequal error variances, and outliers which can be detected by the appearance of any type of pattern. For model 55 there appears to be no visible pattern in the data which strengthens the evidence for this models use. In comparison for model 35 there appears to be somewhat of an upward trend towards the end of the plot indicating that there still may be some relationship not captured by the model.  
+
+An additional method that can be used is to plot the residuals against all available regressors in the data, even those not included in either model. This plot is displayed below. A well-fitted model should likewise not show any obvious pattern. Comparing the models across rows, most of the plots look similar with random variation around 0 except for x2 under model 35. Towards the end of the data there is a clearly identifiable curve indicating that there is an underlying relationship that mass been missed. This provides more strength of evidence for model 55 being the preferred model.  
+
 ```{r 14iii, fig.height=10, fig.width=10}
 residregress <- function(model, title){
 cat %>% left_join(augment(model)) %>%
@@ -244,13 +259,19 @@ cat %>% left_join(augment(model)) %>%
             alpha = 0.5) +
     facet_wrap(~name, scales ="free", ncol = 1) +
     ggtitle(paste("Residuals against available regressors for", title)) +
+    geom_hline(yintercept = 0, 
+                 color = "#4e79a7",
+                 size = 1) +
     theme_bw()
 }
 
 residregress(mod55, "model 55") + residregress(mod35, "model 35")
 ```
+As a final check, the Leverage and Cook's Distance values for each model can be compared relative to their cuttoff value which is calculated as 2p/n where p is the number of regressors in the model and n in the number of observations. Rather than being a strict cuttoff value like VIF, here it is only values far away from the threshold that may be of concern.  
 
+These values deal with individual obsevations in different ways. Leverage is a measure of how distant an observed independent variable is from other observations of the same variable. Values with a high leverage has a greater influence on the fitted regression line. For model 55 there appears to be two observations with noticeably high leverage compared to one for model 35.  
 
+We can examine this further using Cook's Distance which measures the effect of deleting a given observation using a combination of each observations leverage and residual values. Here neither model displays any obersvations that require further analysis. As neither have values that fall outside this threshold it would appear both models don't have any overly influential observations.  
 
 ```{r q14iv}
 n = nrow(cat)
@@ -292,6 +313,9 @@ p10 <- cooks_plot(mod35, t35, "model 35")
 
 ```
 
+Based on the output and discussion conducted above, model 55 has been chosen as the preferred model as it recorded higher values in regards to both adjusted r-squared and negative AIC, it's residual plots displayed less evidence of breaking the model assumptions, and it had no influential observations when using Cook's Distance and only one more than model 35 when using leverage.  
+
+The form of model 55 has been saved in the output below as modelp.  
 
 ```{r q14v}
 modelp <- lm(formula = y ~ x1 + x2 + x3 + x5 + x7, data = cat)
