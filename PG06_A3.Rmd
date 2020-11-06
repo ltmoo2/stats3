@@ -48,14 +48,33 @@ ggscatmat(cat, columns=c(1:9)) +
 ```
 
 
-### Q10. [10 marks]
-**i)**
+### Q10. [10 marks]  
+
+The *ggscatmat()* function used above comes from the **GGally** package and is used to generate a scatterplot matrix for the caterpillar data set. This data is based on a 1973 study of pine processionary caterpillars and contains a response variable y which relates to the log transform of the number of nests per unit, and 8 potential explanatory variables.
+
+This matrix is divided into three distinct parts and from this we can gather information about the complete set of regressors (x1 through x8) and the response variable y.  
+
+A description of the data from the helpfile and also been included in the table above to provide context for these observations.   
+
+**i)** The lower triangle of the table provides a scatter plot for each variable plotted against all others. The variables in the top margin are plotted on the x-axis and those on the left are plotted on the y-axis. This can used to quickly visualise the relationship between any two variables in the data set and see if any are suitable for further analysis.   
+
+Looking at this for the caterpillar data, while there doesn't appear to be much association for the first two variables, x3 shows somewhat of an a relationship with x6 and a stronger one with x7. This makes sense considering considering x3 relates to the number of pine trees in the area being analysed. As this increases it is probable that both the height of the dominant tree in the area (x6) also increases as there is a larger sample, also the amount of vegetation strata (x7) would also increase as a higher number of trees may suggest an area is more fertile and suitable for growing more plants.  
+
+Moving to the right, x4 (height of the centre tree in the area) has a similarly strong relationship with x6 (height of the tallest tree in the area). Again, this makes sense to be highly associated as areas that can produce taller trees are also more likely to be able to produce tall trees in general, thus increasing the chance that the tree in the centre would be taller.  
+
+Next across, x6 (height of the tallest tree) and x7 (number of vegetation strata) also display a high degree of association which is reasonable given that an area that produces overly tall trees should have high quality soil that increases the amount of vegetation strata in the area.  
+
+Finally, along the bottom row, we see what appears to be a negative association for all the x variables with y along the logarithmic scale that it has been transformed by.  
 
 
-**ii)**
+**ii)** The top right triangle in this matrix display the Pearson correlation coefficient for the relationships between different variables. First examining just the different x variables, almost all are correlated positively, indicating that as one increases so does the others. The only ones that do not are x5 with x2, x8 with x1, and x8 with x4. However, these values are all small and do not indicate any strong linear relationship.  
+
+Looking at the realtionships discussed previously, the correlation for x3 (number of pine trees) with x6 (height of the tallest tree) and x7 (number of vegetation strata) are 0.76 and 0.88 respectively. This supports that these two values are highly positively correlated. Similar results are seen for x4 (height of the centre tree in the area) and x6 (height of the tallest tree in the area) with a correlation of 0.77 and also for x6 (height of the tallest tree) and x7 (number of vegetation strata) with a correlation of 0.85. This provides evidence that there may be some collinearity between the variables discussed.  
+
+Interestingly, all x variables share a negative correlation with the y response variable, with x7(number of vegetation strata) being the strongest. With y relating to the number of caterpillar nest per tree it makes sense to be negatively correlated with x3 (the number of trees) as this gives the caterpillars area to spread out, which is supported by it having the second strongest correlation at -0.56. At discussed previously, this variable is strongly positively correlated with x6 and x7 making it reasonable for them to also have strong negative correlations with y. Also it may be likely that a high altitude (measured by x1) and a steep slope (measured by x2), are not ideal caterpillar habitats and may cause the somewhat strong negative correlation observed.  
 
 
-**iiii)**
+**iiii)** Finally, the main diagonal displays denisty plots for each variable. 
 
 
 ### Q11. [5 marks] 
@@ -67,7 +86,11 @@ car::vif(modelf)
 
 
 ### Q12. [10 marks] 
+The VIF, or variable inflation factor, measures the degree of collinearity between the explanatory variables within a model. This is similar to the visual inference conducted above in the scatter plot matrix but instead provides an automated way to make this comparison. This involves calculating the r-squared value for each variable on all other variables. In general, values for VIF greater than 10 are considered to high.  
 
+This can be used to identify redundant variables where the information is already provided by other variables in the model. It is desirable to identify and remove such regressors as if there is multicollinearity, there tends to be high standard errors on the coefficients for that regressor - that is the weight applied to each of the associated regressors becomes arbitrary.  
+
+Looking at the output for modelf above, variable x6 is the only one with a VIF above the cuttoff value of 10. This variable relates to the height (in meters) of the dominant tree, and as discussed previously, is highly positively correlated with x3, x4, and x7 - or the number of pine trees, height of the centre tree in the area, and number of vegetation strata respectively. As mentioned these associations are reasonable given that more trees (x3) would increase the sample from which the highest tree can be drawn from, a higher center tree would indicate there are taller trees in the area, and an increased about of vegetation would indicate an environment condusive to growing large trees. As such the predictive power of x6 is already captured by these variables and the rest of the data. That means, according to the VIF, this variable should be removed from consideration. This is also desirable as it reduced the total number of regressors for the model without losing its predictive power, leading to the best simplest model.  
 
 ```{r ensemble}
 quiet <- function(x) { 
@@ -87,6 +110,7 @@ nrow(summary(all_mod))
 nmod <- nrow(summary(all_mod))
 ```
 
+The *all_mod* object contains an ensemble of 127 models. This number was caluclated by counting the number of rows within the data summary. This can also be confirmed by examing the model column in the data summary which has the last model as 127.
 
 ```{r modperform, fig.height=4, fig.width=6}
 all_mod_s <- all_mod %>%
@@ -278,7 +302,13 @@ modelp <- lm(formula = y ~ x1 + x2 + x3 + x5 + x7, data = cat)
 ```{r q15i}
 modelp
 ```
+Based on the above analysis, the preferred model is model 55 which is saved as modelp. The form of this model can be seen in the above output and can be written as:
+$ y = 8.167 - 0.0026 \times x1 - 0.0361 \times x2 + 0.0396 \times x3 -0.692 \times x5 - 1.108 \times x7$ 
 
+Or with abbreviated variable names as:
+$ y = 8.167 - 0.0026 \times altitude - 0.0361 \times slope + 0.0396 \times trees -0.692 \times orientation - 1.108 \times vegetation$
+
+CLT-based confidence levels can also be constructed for the regression coefficients using the *confit* function and are provided in the table below:
 
 ```{r 15ii}
 clt <- confint(modelp) %>%
@@ -289,6 +319,7 @@ clt <- confint(modelp) %>%
 clt %>% kable(caption = "CLT-based confidence intervals") %>%
   kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
 ```
+An additional statistic of interest is the estimated standard deviation of the residuals or, also named, the residual standard deviation. This can be extracted using the *sigma* function is shown in the output below to be .531. This value tells us the standard deviation of the residual values which is the difference between the obseved and model fitted values.
 
 ```{r 15iii}
 sigma(modelp)
@@ -340,6 +371,11 @@ boot_interval %>%
 modelp
   
 ```
+The code above has been used to generate 1000 values from the bootstrap sampling distribution of the regression coefficients from the preferred model, modelp. This has been sampled from the original caterpillar data with replacement. The model of form modelp has then been refit for each sample and the regression coefficients saved for each of the 1000 replications. From this bootstrap sample, a 95% confidence interval was produced for each of the regression coefficients within this model and is shown in the table outputted above.  
+
+This interval helps provide an insight into the variability present in each estimate and, although not formally, helps identify which are statistically different from 0 and are therefore having an effect on the response variable - the logarithmic transform of the average number of nests of caterpillars per tree. The lower 2.5% and 97.5% quantiles of the data shown are the end points of this interval and represent the degree of uncertainty surrounding these estimated coefficients (which are shown in the model output above) in relation to the 'true' population values. For example, the intercept term b0 has an observed value of 8.167, however this only comes from a sample from the entire population. Looking at the produced confidence interval this can be expanded to say that we are 95% confident the 'true' value of b0 falls between 5.106 and 11.673 using the bootstrap method. The same method can be applied to all other estimates shown.  
+
+This can also be visualised by producing a histogram of the bootstrap distribution for each regression coefficients, which is shown in the output below. On this plot, the observed value of eat beta is shown by a black line whearas the two grey lines correspond to the lower and upper bounds of the confidence interval. This shows what was discussed above where the grey bars capture 95% of the simulated values for each estimate.
 
 ```{r bootplot, fig.height=6, fig.width=8}
 boot_plot <- R_coeffs %>%
@@ -391,6 +427,8 @@ b1obs <- tidyp %>% filter(term == "x1") %>%
 pval <- R_coeffs %>%
   filter(abs(b1) >= abs(b1obs)) %>%
   nrow()/R
+
+pval
 
 
 R_coeffs %>%
