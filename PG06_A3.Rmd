@@ -74,7 +74,7 @@ Looking at the realtionships discussed previously, the correlation for x3 (numbe
 Interestingly, all x variables share a negative correlation with the y response variable, with x7(number of vegetation strata) being the strongest. With y relating to the number of caterpillar nest per tree it makes sense to be negatively correlated with x3 (the number of trees) as this gives the caterpillars area to spread out, which is supported by it having the second strongest correlation at -0.56. At discussed previously, this variable is strongly positively correlated with x6 and x7 making it reasonable for them to also have strong negative correlations with y. Also it may be likely that a high altitude (measured by x1) and a steep slope (measured by x2), are not ideal caterpillar habitats and may cause the somewhat strong negative correlation observed.  
 
 
-**iiii)** Finally, the main diagonal displays denisty plots for each variable. 
+**iii)** Finally, the main diagonal displays denisty plots for each variable. Variables x1, x2, and x6 are all approximately normal with varying amounts of positive skew while x4 and x5 are also normal they are instead negatively skewed. Meanwhile x7 and x8 display multi-modality which is reasonable considering there is a fixed number of vegetable strata, and the mix settlement index has a binary outcome of only 1 or 2. Meanwhile examining the response variable, y, it appears that many of the observed values were quite low with quite a long tail to the right. This suggests that most habitats support a small number of caterpillar nests.
 
 
 ### Q11. [5 marks] 
